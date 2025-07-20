@@ -2760,9 +2760,19 @@ pub fn resolveWindowsJS_T(comptime T: type, globalObject: *JSC.JSGlobalObject, p
 }
 
 pub fn resolveJS_T(comptime T: type, globalObject: *JSC.JSGlobalObject, allocator: std.mem.Allocator, isWindows: bool, paths: []const []const T) bun.JSError!JSC.JSValue {
-    // Adding 8 bytes when Windows for the possible UNC root.
+    // Calculate buffer length more conservatively for Windows path resolution
     var bufLen: usize = if (isWindows) 8 else 0;
     for (paths) |path| bufLen += if (bufLen > 0 and path.len > 0) path.len + 1 else path.len;
+    
+    if (isWindows) {
+        // For Windows, we need extra space because:
+        // 1. resolvedTail can accumulate multiple path segments
+        // 2. Device names and separators are added
+        // 3. CWD may be added for relative paths
+        // Multiply by 2 to account for worst-case accumulation + add space for CWD
+        bufLen = bufLen * 2 + MAX_PATH_SIZE(T);
+    }
+    
     bufLen = @max(bufLen, PATH_SIZE(T));
     const buf = allocator.alloc(T, bufLen) catch bun.outOfMemory();
     defer allocator.free(buf);
