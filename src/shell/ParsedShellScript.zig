@@ -59,8 +59,9 @@ pub fn setCwd(this: *ParsedShellScript, globalThis: *JSGlobalObject, callframe: 
     return .js_undefined;
 }
 
-pub fn setQuiet(this: *ParsedShellScript, _: *JSGlobalObject, _: *JSC.CallFrame) bun.JSError!JSC.JSValue {
-    this.quiet = true;
+pub fn setQuiet(this: *ParsedShellScript, _: *JSGlobalObject, callframe: *JSC.CallFrame) bun.JSError!JSC.JSValue {
+    const arg = callframe.argument(0);
+    this.quiet = arg.toBoolean();
     return .js_undefined;
 }
 
